@@ -277,3 +277,14 @@ body.warping #warp::before { animation: warp-zoom 1.1s ease-in forwards; }
   }
   #ship-picks { flex-direction: column; }
 }
+/* Sign in / My Passport link */
+.auth-link {
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(34, 211, 238, 0.18);
+  border: 1px solid var(--cyan);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.auth-link:hover { background: rgba(34, 211, 238, 0.35); }
