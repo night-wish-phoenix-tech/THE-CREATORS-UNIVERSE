@@ -1,0 +1,23 @@
+.top-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.back-link {
+  color: var(--text);
+  text-decoration: none;
+  background: rgba(34, 211, 238, 0.18);
+  border: 1px solid var(--cyan);
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+.back-link:hover { background: rgba(34, 211, 238, 0.35); }
+
+.demo-note {
+  margin-top: 10px;
+  font-size: 0.7rem;
+  opacity: 0.6;
+  line-height: 1.4;
+}
