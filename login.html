@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign in · THE CREATOR'S UNIVERSE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>WELCOME BACK</h1>
+    <p class="sub">Sign in to your Creator Passport</p>
+
+    <form id="login-form" novalidate>
+      <label for="email">Email</label>
+      <input id="email" type="email" required autocomplete="email" />
+
+      <label for="password">Password</label>
+      <input id="password" type="password" required autocomplete="current-password" />
+
+      <button class="btn" id="submit" type="submit">Sign in</button>
+      <button class="btn secondary" id="reset" type="button">Forgot password? Email me a reset link</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+
+    <div class="links">
+      <a href="register.html">Create an account</a>
+      <a href="index.html">← Galaxy</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth } from "./js/firebase-config.js";
+    import {
+      signInWithEmailAndPassword, sendPasswordResetEmail, onAuthStateChanged
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("submit");
+    const emailInput = document.getElementById("email");
+
+    function say(text, ok) {
+      msg.textContent = text;
+      msg.className = "msg " + (ok ? "ok" : "error");
+    }
+
+    function friendly(err) {
+      const map = {
+        "auth/invalid-credential": "Wrong email or password.",
+        "auth/invalid-email": "That email address doesn't look right.",
+        "auth/user-disabled": "This account has been disabled.",
+        "auth/too-many-requests": "Too many attempts. Wait a bit and try again.",
+        "auth/network-request-failed": "Network problem. Check your internet and try again."
+      };
+      return map[err.code] || "Something went wrong (" + (err.code || err.message) + ").";
+    }
+
+    // Already signed in? Go straight to the passport.
+    onAuthStateChanged(auth, user => { if (user) location.href = "passport.html"; });
+
+    document.getElementById("login-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      btn.disabled = true;
+      say("Signing in…", true);
+      try {
+        await signInWithEmailAndPassword(auth, emailInput.value.trim(), document.getElementById("password").value);
+        location.href = "passport.html";
+      } catch (err) {
+        say(friendly(err));
+        btn.disabled = false;
+      }
+    });
+
+    document.getElementById("reset").addEventListener("click", async () => {
+      const email = emailInput.value.trim();
+      if (!email) return say("Type your email above first, then click this again.");
+      try {
+        await sendPasswordResetEmail(auth, email);
+        say("If that email has an account, a reset link is on its way. Check spam too.", true);
+      } catch (err) {
+        say(friendly(err));
+      }
+    });
+  </script>
+</body>
+</html>
