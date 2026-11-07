@@ -15,6 +15,22 @@
   }
   </script>
 </head>
+  <div id="warp"><p id="warp-text"></p></div>
+
+  <script>
+    document.getElementById("enter-btn").addEventListener("click", function (e) {
+      e.preventDefault();
+      var url = this.href;
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        location.href = url;
+        return;
+      }
+      document.getElementById("warp-text").textContent =
+        "🚀 Launching to " + document.getElementById("panel-name").textContent + "…";
+      document.body.classList.add("warping");
+      setTimeout(function () { location.href = url; }, 1100);
+    });
+  </script>
 <body>
   <div id="loader">
     <div class="loader-ring"></div>
