@@ -35,7 +35,6 @@
 
   <canvas id="galaxy-canvas" aria-label="Interactive planet island with exhibition pavilions"></canvas>
 
-  <!-- Accessible 2D list of exhibits -->
   <nav id="world-nav" aria-label="Exhibits">
     <h2>Exhibits</h2>
     <ul id="world-list"></ul>
@@ -52,7 +51,22 @@
     <button id="back-btn">Close exhibit</button>
   </aside>
 
-  <p class="hint">Drag to look around · Scroll or pinch to zoom · Tap a glowing pavilion</p>
+  <!-- Avatar controls -->
+  <div id="avatar-bar">
+    <button id="walk-btn">🚶 Walk mode</button>
+    <div id="swatches" aria-label="Avatar colour"></div>
+  </div>
+
+  <button id="walk-prompt" class="hidden-prompt"></button>
+
+  <div id="dpad" aria-label="Movement buttons">
+    <button data-dir="up" aria-label="Forward">▲</button>
+    <button data-dir="left" aria-label="Left">◀</button>
+    <button data-dir="down" aria-label="Back">▼</button>
+    <button data-dir="right" aria-label="Right">▶</button>
+  </div>
+
+  <p class="hint">Drag to look · Scroll or pinch to zoom · Tap a pavilion · Try Walk mode (WASD / arrows, E to open)</p>
 
   <noscript>Please enable JavaScript to explore the universe.</noscript>
 
