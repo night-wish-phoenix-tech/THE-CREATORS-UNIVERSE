@@ -8,8 +8,11 @@ const canvas = document.getElementById("galaxy-canvas");
 
 /* ---------- Which planet? (planet.html?world=artoria) ---------- */
 const id = new URLSearchParams(location.search).get("world");
-const world = WORLDS.find(w => w.id === id) || WORLDS[0];
+const worldIndex = Math.max(0, WORLDS.findIndex(w => w.id === id));
+const world = WORLDS[worldIndex];
 const wColor = new THREE.Color(world.color);
+const nextWorld = WORLDS[(worldIndex + 1) % WORLDS.length];
+const prevWorld = WORLDS[(worldIndex - 1 + WORLDS.length) % WORLDS.length];
 
 document.title = world.name + " · THE CREATOR'S UNIVERSE";
 document.getElementById("world-title").textContent = world.name;
@@ -26,10 +29,10 @@ const exhibits = world.categories.map(cat => ({
 
 /* ---------- Scene ---------- */
 const scene = new THREE.Scene();
-scene.fog = new THREE.FogExp2(0x120a30, 0.007);
+scene.fog = new THREE.FogExp2(0x120a30, 0.006);
 
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.1, 1000);
-const HOME_POS = new THREE.Vector3(0, 10, 23);
+const HOME_POS = new THREE.Vector3(0, 11, 26);
 const HOME_TARGET = new THREE.Vector3(0, 1, 0);
 camera.position.copy(HOME_POS);
 
@@ -41,7 +44,7 @@ const controls = new OrbitControls(camera, canvas);
 controls.target.copy(HOME_TARGET);
 controls.enableDamping = true;
 controls.minDistance = 6;
-controls.maxDistance = 45;
+controls.maxDistance = 48;
 controls.maxPolarAngle = Math.PI / 2.05;
 controls.autoRotate = !reducedMotion;
 controls.autoRotateSpeed = 0.4;
@@ -56,7 +59,7 @@ scene.add(warm);
 /* ---------- Sky from your image ---------- */
 let sky = null;
 new THREE.TextureLoader().load(
-  "images/space-bg.jpg",
+  "image/space-bg.jpg",
   tex => {
     tex.colorSpace = THREE.SRGBColorSpace;
     sky = new THREE.Mesh(
@@ -67,7 +70,7 @@ new THREE.TextureLoader().load(
     scene.add(sky);
   },
   undefined,
-  () => console.warn("Could not load images/space-bg.jpg")
+  () => console.warn("Could not load image/space-bg.jpg")
 );
 
 /* ---------- Helpers ---------- */
@@ -81,6 +84,10 @@ function glowTexture(color) {
   g.fillStyle = grad;
   g.fillRect(0, 0, 256, 256);
   return new THREE.CanvasTexture(c);
+}
+
+function rgba(color, a) {
+  return "rgba(" + Math.round(color.r * 255) + "," + Math.round(color.g * 255) + "," + Math.round(color.b * 255) + "," + a + ")";
 }
 
 function starSprite() {
@@ -116,13 +123,13 @@ function makeStars(count, size) {
 }
 scene.add(makeStars(isMobile ? 300 : 700, 0.6));
 
-function makeLabel(text) {
+function makeLabel(text, borderColor) {
   const c = document.createElement("canvas");
   c.width = 512; c.height = 128;
   const g = c.getContext("2d");
   g.fillStyle = "rgba(10,14,45,0.78)";
   g.fillRect(0, 0, 512, 128);
-  g.strokeStyle = world.color;
+  g.strokeStyle = borderColor || world.color;
   g.lineWidth = 6;
   g.strokeRect(3, 3, 506, 122);
   g.fillStyle = "#ffffff";
@@ -175,7 +182,6 @@ island.add(new THREE.Mesh(
   new THREE.MeshStandardMaterial({ color: grassColor, roughness: 0.9, flatShading: true })
 ));
 
-// Rocky underside
 const H = R * 1.3;
 const coneGeo = new THREE.ConeGeometry(R * 0.98, H, 32, 8);
 const cp = coneGeo.attributes.position;
@@ -192,9 +198,8 @@ rock.rotation.x = Math.PI;
 rock.position.y = -0.25 - H / 2;
 island.add(rock);
 
-// Glow under the island
 const underGlow = new THREE.Sprite(new THREE.SpriteMaterial({
-  map: glowTexture("rgba(" + Math.round(wColor.r * 255) + "," + Math.round(wColor.g * 255) + "," + Math.round(wColor.b * 255) + ",0.7)"),
+  map: glowTexture(rgba(wColor, 0.7)),
   blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
 }));
 underGlow.position.set(0, -H - 1, 0);
@@ -225,7 +230,7 @@ title.position.y = 4.6;
 title.scale.set(5, 1.25, 1);
 island.add(title);
 
-// Trees (outer rim + inner ring)
+// Trees
 const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5b3a29, roughness: 1 });
 const leafColors = [0x4caf70, 0xe879a8, 0x8aa83a, 0xf9a8d4];
 for (let i = 0; i < (isMobile ? 14 : 22); i++) {
@@ -288,13 +293,117 @@ exhibits.forEach((ex, i) => {
   pavilions.push({ group: g, pos: new THREE.Vector3(px, 0, pz), scale: 1, target: 1 });
 });
 
+/* ---------- Bridges + portals (to the next / previous planet) ---------- */
+const bridges = [];
+const portalSpinners = [];
+const BR_START = R - 1;
+const BR_END = R + 7;
+
+function buildBridge(angle, target) {
+  const tColor = new THREE.Color(target.color);
+  const dx = Math.cos(angle), dz = Math.sin(angle);
+  const g = new THREE.Group();
+  g.rotation.y = -angle; // local +x now points along the bridge
+
+  // Walkway
+  const len = BR_END - BR_START;
+  const mid = (BR_START + BR_END) / 2;
+  const plank = new THREE.Mesh(
+    new THREE.BoxGeometry(len, 0.2, 1.6),
+    new THREE.MeshStandardMaterial({ color: 0x2a2250, emissive: 0x4c3a9a, emissiveIntensity: 0.35, roughness: 0.6 })
+  );
+  plank.position.set(mid, 0.15, 0);
+  g.add(plank);
+
+  // Glowing rails + lamps
+  const railMat = new THREE.MeshBasicMaterial({ color: 0x22d3ee });
+  [-0.82, 0.82].forEach(z => {
+    const rail = new THREE.Mesh(new THREE.BoxGeometry(len, 0.07, 0.07), railMat);
+    rail.position.set(mid, 0.6, z);
+    g.add(rail);
+    for (let k = 0; k <= 4; k++) {
+      const post = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.5, 0.07), railMat);
+      post.position.set(BR_START + (len * k) / 4, 0.4, z);
+      g.add(post);
+    }
+  });
+
+  // Portal ring
+  const portalX = BR_END + 1.2;
+  const pg = new THREE.Group();
+  pg.position.set(portalX, 1.9, 0);
+  pg.rotation.y = Math.PI / 2; // ring faces along the bridge
+
+  const ring = new THREE.Mesh(
+    new THREE.TorusGeometry(1.6, 0.14, 16, 48),
+    new THREE.MeshStandardMaterial({ color: tColor, emissive: tColor, emissiveIntensity: 0.9, roughness: 0.3 })
+  );
+  const spinner = new THREE.Mesh(
+    new THREE.TorusGeometry(1.25, 0.05, 8, 40),
+    new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8 })
+  );
+  const disc = new THREE.Mesh(
+    new THREE.CircleGeometry(1.55, 40),
+    new THREE.MeshBasicMaterial({
+      color: tColor, transparent: true, opacity: 0.35, side: THREE.DoubleSide,
+      blending: THREE.AdditiveBlending, depthWrite: false
+    })
+  );
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: glowTexture(rgba(tColor, 0.8)), blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+  }));
+  halo.scale.set(7, 7, 1);
+
+  pg.add(ring, spinner, disc, halo);
+  g.add(pg);
+
+  const light = new THREE.PointLight(tColor, 25, 12);
+  light.position.set(portalX - 1, 2, 0);
+  g.add(light);
+
+  const label = makeLabel("→ " + target.name, target.color);
+  label.position.set(portalX, 4.2, 0);
+  g.add(label);
+
+  island.add(g);
+
+  ring.userData.portal = target.id;
+  disc.userData.portal = target.id;
+  pickables.push(ring, disc);
+  portalSpinners.push(spinner);
+
+  bridges.push({
+    dx, dz,
+    max: portalX + 0.2,
+    portalPos: new THREE.Vector3(dx * portalX, 0, dz * portalX),
+    target
+  });
+}
+
+buildBridge(Math.PI / N, nextWorld);
+buildBridge(-Math.PI / N, prevWorld);
+
+/* ---------- Travel through a portal ---------- */
+let travelling = false;
+function travel(targetId) {
+  if (travelling) return;
+  const target = WORLDS.find(w => w.id === targetId);
+  if (!target) return;
+  travelling = true;
+  const url = "planet.html?world=" + target.id;
+  if (reducedMotion) { location.href = url; return; }
+  document.getElementById("warp-text").textContent = "🌀 Entering portal to " + target.name + "…";
+  document.body.classList.add("warping");
+  setTimeout(() => { location.href = url; }, 1100);
+}
+
 /* ---------- Avatar ---------- */
 const SWATCHES = ["#8b5cf6", "#f472b6", "#22d3ee", "#fbbf24", "#34d399", "#fb923c"];
 let avatarColor = SWATCHES[0];
 try {
   const saved = localStorage.getItem("cu-avatar-color");
   if (saved && SWATCHES.includes(saved)) avatarColor = saved;
-} catch (e) { /* storage may be blocked, that's fine */ }
+} catch (e) { /* storage may be blocked */ }
 
 const avatarMat = new THREE.MeshStandardMaterial({
   color: avatarColor, emissive: avatarColor, emissiveIntensity: 0.18, roughness: 0.5
@@ -366,7 +475,7 @@ function setWalking(on) {
     controls.target.set(0, 1.2, 3.2);
   } else {
     controls.minDistance = 6;
-    controls.maxDistance = 45;
+    controls.maxDistance = 48;
     nearIndex = -1;
     prompt_.classList.add("hidden-prompt");
     fly(HOME_POS.clone(), HOME_TARGET.clone());
@@ -454,17 +563,37 @@ function updateWalk(dt, t) {
     avatar.rotation.y += diff * Math.min(1, dt * 10);
   }
 
-  // Keep on the island
   const p = avatar.position;
-  const maxR = R - 0.9;
-  const d = Math.hypot(p.x, p.z);
-  if (d > maxR) { p.x *= maxR / d; p.z *= maxR / d; }
 
-  // Don't walk through the crystal pedestal
+  // Where may the avatar stand? On the island, or inside a bridge corridor.
+  let corridor = null;
+  for (const b of bridges) {
+    const along = p.x * b.dx + p.z * b.dz;
+    const across = -p.x * b.dz + p.z * b.dx;
+    if (along > R - 2.2 && along < b.max + 0.5 && Math.abs(across) < 0.95) {
+      corridor = { b, along, across };
+      break;
+    }
+  }
+  if (corridor) {
+    if (corridor.along > R - 0.9) {
+      const b = corridor.b;
+      const across = Math.max(-0.7, Math.min(0.7, corridor.across));
+      const along = Math.min(corridor.along, b.max);
+      p.x = b.dx * along - b.dz * across;
+      p.z = b.dz * along + b.dx * across;
+    }
+  } else {
+    const maxR = R - 0.9;
+    const d = Math.hypot(p.x, p.z);
+    if (d > maxR) { p.x *= maxR / d; p.z *= maxR / d; }
+  }
+
+  // Crystal pedestal
   const dc = Math.hypot(p.x, p.z);
   if (dc < 1.9 && dc > 0.001) { p.x *= 1.9 / dc; p.z *= 1.9 / dc; }
 
-  // Don't walk through pavilions
+  // Pavilions
   pavilions.forEach(pv => {
     const dx = p.x - pv.pos.x, dz = p.z - pv.pos.z;
     const dd = Math.hypot(dx, dz);
@@ -475,13 +604,18 @@ function updateWalk(dt, t) {
   });
   p.y = AVATAR_Y;
 
+  // Portals
+  bridges.forEach(b => {
+    if (Math.hypot(p.x - b.portalPos.x, p.z - b.portalPos.z) < 1.3) travel(b.target.id);
+  });
+
   // Walking animation
   const swing = moving ? Math.sin(t * 11) * 0.6 : 0;
   avatar.userData.legL.rotation.x = swing;
   avatar.userData.legR.rotation.x = -swing;
   avatar.userData.body.position.y = 0.75 + (moving ? Math.abs(Math.sin(t * 11)) * 0.05 : 0);
 
-  // Camera follows the avatar (you can still drag to orbit around it)
+  // Camera follows the avatar
   camera.position.add(p.clone().sub(before));
   controls.target.set(p.x, p.y + 1.2, p.z);
 
@@ -528,6 +662,20 @@ exhibits.forEach((ex, i) => {
   list.appendChild(li);
 });
 
+// 2D alternative to the portals
+const travelTitle = document.createElement("li");
+travelTitle.textContent = "Travel";
+travelTitle.style.cssText = "font-size:0.8rem;letter-spacing:2px;opacity:0.7;margin:12px 0 4px;";
+list.appendChild(travelTitle);
+[nextWorld, prevWorld].forEach(tw => {
+  const li = document.createElement("li");
+  const btn = document.createElement("button");
+  btn.innerHTML = '<span class="dot" style="background:' + tw.color + '"></span>→ ' + tw.name;
+  btn.addEventListener("click", () => travel(tw.id));
+  li.appendChild(btn);
+  list.appendChild(li);
+});
+
 function openExhibit(i) {
   const ex = exhibits[i];
   document.getElementById("panel-name").textContent = ex.title;
@@ -543,7 +691,7 @@ function openExhibit(i) {
   panel.classList.remove("hidden");
   list.querySelectorAll("button").forEach(b => b.classList.toggle("active", Number(b.dataset.index) === i));
 
-  if (walking) return; // in walk mode the camera stays with the avatar
+  if (walking) return;
 
   const p = pavilions[i].pos;
   const dir = p.clone().setY(0).normalize();
@@ -581,13 +729,17 @@ canvas.addEventListener("pointerdown", e => { downX = e.clientX; downY = e.clien
 canvas.addEventListener("pointerup", e => {
   if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
   const hit = pick(e);
-  if (hit) openExhibit(hit.object.userData.index);
+  if (!hit) return;
+  const ud = hit.object.userData;
+  if (ud.portal) travel(ud.portal);
+  else if (ud.index !== undefined) openExhibit(ud.index);
 });
 canvas.addEventListener("pointermove", e => {
   if (e.pointerType === "touch") return;
   const hit = pick(e);
-  hovered = hit ? hit.object.userData.index : -1;
-  canvas.style.cursor = hovered >= 0 ? "pointer" : "grab";
+  const ud = hit ? hit.object.userData : null;
+  hovered = ud && ud.index !== undefined ? ud.index : -1;
+  canvas.style.cursor = hit ? "pointer" : "grab";
 });
 
 /* ---------- Animation ---------- */
@@ -609,6 +761,7 @@ function animate() {
     crystal.rotation.y += dt * 0.6;
     crystal.position.y = 2.5 + Math.sin(t * 1.2) * 0.2;
     if (sky) sky.rotation.y += dt * 0.004;
+    portalSpinners.forEach((s, i) => { s.rotation.z += dt * (i % 2 ? -1.4 : 1.4); });
   }
 
   if (walking) updateWalk(dt, t);
