@@ -26,7 +26,7 @@ controls.maxDistance = 70;
 controls.autoRotate = !reducedMotion;
 controls.autoRotateSpeed = 0.3;
 
-/* ---------- Lights (warm sunset + purple space) ---------- */
+/* ---------- Lights ---------- */
 scene.add(new THREE.AmbientLight(0x6670ff, 0.5));
 scene.add(new THREE.HemisphereLight(0xffb0d0, 0x3a2090, 1.1));
 const warm = new THREE.DirectionalLight(0xffb070, 1.8);
@@ -39,7 +39,7 @@ scene.add(sun);
 /* ---------- Nebula sky from your image ---------- */
 let sky = null;
 new THREE.TextureLoader().load(
-  "images/space-bg.jpg",
+  "image/space-bg.jpg",
   tex => {
     tex.colorSpace = THREE.SRGBColorSpace;
     sky = new THREE.Mesh(
@@ -50,7 +50,7 @@ new THREE.TextureLoader().load(
     scene.add(sky);
   },
   undefined,
-  () => console.warn("Could not load images/space-bg.jpg - using gradient background instead.")
+  () => console.warn("Could not load image/space-bg.jpg - using gradient background instead.")
 );
 
 /* ---------- Round glowing stars ---------- */
@@ -134,7 +134,7 @@ function mulberry32(a) {
   };
 }
 
-/* ---------- Cloud sea (pink / purple sunset mist) ---------- */
+/* ---------- Cloud sea ---------- */
 const cloudTextures = [
   glowTexture("rgba(244,114,182,0.55)"),
   glowTexture("rgba(139,92,246,0.5)"),
@@ -163,14 +163,12 @@ function buildIsland(w) {
   const rnd = mulberry32(7);
   const g = new THREE.Group();
 
-  // Grass top
   const grass = new THREE.Mesh(
     new THREE.CylinderGeometry(R, R * 0.95, 0.4, 40),
     new THREE.MeshStandardMaterial({ color: 0x2f8f5b, roughness: 0.9, flatShading: true })
   );
   g.add(grass);
 
-  // Rocky underside
   const H = R * 1.9;
   const coneGeo = new THREE.ConeGeometry(R * 0.98, H, 28, 8);
   const pos = coneGeo.attributes.position;
@@ -190,13 +188,11 @@ function buildIsland(w) {
   rock.position.y = -0.2 - H / 2;
   g.add(rock);
 
-  // Trees
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x5b3a29, roughness: 1 });
   function leafMat(c) {
     return new THREE.MeshStandardMaterial({ color: c, roughness: 0.8, flatShading: true });
   }
 
-  // Big central tree
   const bigTrunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.4, 2.4, 8), trunkMat);
   bigTrunk.position.set(0, 1.4, -0.4);
   g.add(bigTrunk);
@@ -211,14 +207,13 @@ function buildIsland(w) {
     g.add(m);
   });
 
-  // Small trees (pink blossoms + green)
   const leafColors = [0xe879a8, 0x4caf70, 0xf9a8d4, 0x8aa83a];
   for (let i = 0; i < 16; i++) {
     const a = rnd() * Math.PI * 2;
     const r = 1.8 + rnd() * (R * 0.8 - 1.8);
     const s = 0.7 + rnd() * 0.8;
     const x = Math.cos(a) * r, z = Math.sin(a) * r;
-    if (z > R * 0.45 && Math.abs(x) < 1.2) continue; // keep the river path clear
+    if (z > R * 0.45 && Math.abs(x) < 1.2) continue;
     const t = new THREE.Mesh(new THREE.CylinderGeometry(0.05 * s, 0.09 * s, 0.7 * s, 6), trunkMat);
     t.position.set(x, 0.2 + 0.35 * s, z);
     const f = new THREE.Mesh(new THREE.IcosahedronGeometry(0.4 * s, 1), leafMat(leafColors[i % 4]));
@@ -227,7 +222,6 @@ function buildIsland(w) {
     g.add(t, f);
   }
 
-  // Glowing pavilions
   [3.6, 5.3].forEach(a => {
     const px = Math.cos(a) * R * 0.6, pz = Math.sin(a) * R * 0.6;
     const base = new THREE.Mesh(
@@ -243,7 +237,6 @@ function buildIsland(w) {
     g.add(base, roof);
   });
 
-  // River on top
   const river = new THREE.Mesh(
     new THREE.PlaneGeometry(0.8, R * 0.95),
     new THREE.MeshBasicMaterial({
@@ -255,7 +248,6 @@ function buildIsland(w) {
   river.position.set(0, 0.22, R * 0.48);
   g.add(river);
 
-  // Glowing waterfalls down the rock face
   const D = H * 0.9;
   const zTop = R + 0.15;
   const zBot = R * 0.1 + 0.35;
@@ -275,7 +267,6 @@ function buildIsland(w) {
     g.add(fall);
   });
 
-  // Cyan glow at the bottom of the waterfall
   const glow = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTexture("rgba(34,211,238,0.9)"), blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false
@@ -288,7 +279,6 @@ function buildIsland(w) {
   light.position.set(0, 0.2 - D * 0.7, zBot + 1);
   g.add(light);
 
-  // Pink mist under the island
   const mist = new THREE.Sprite(new THREE.SpriteMaterial({
     map: glowTexture("rgba(244,114,182,0.6)"), blending: THREE.AdditiveBlending,
     transparent: true, depthWrite: false
@@ -297,7 +287,6 @@ function buildIsland(w) {
   mist.scale.set(R * 4, R * 2, 1);
   g.add(mist);
 
-  // Falling droplets
   const N = isMobile ? 40 : 90;
   const dp = new Float32Array(N * 3);
   dropData = [];
@@ -374,6 +363,125 @@ WORLDS.forEach(w => {
   pickables.push(body);
 });
 
+/* ---------- Spaceship ---------- */
+const SHIPS = {
+  scout:   { name: "Scout",   color: 0x22d3ee, wing: 1.5, len: 1.7 },
+  cruiser: { name: "Cruiser", color: 0xf472b6, wing: 2.3, len: 1.5 },
+  comet:   { name: "Comet",   color: 0xfbbf24, wing: 1.1, len: 2.1 }
+};
+let shipType = "scout";
+try {
+  const saved = localStorage.getItem("cu-ship");
+  if (saved && SHIPS[saved]) shipType = saved;
+} catch (e) { /* storage may be blocked */ }
+
+const FLAME_TEX = glowTexture("rgba(140,235,255,0.95)");
+let ship = null;
+
+function buildShip(type) {
+  const cfg = SHIPS[type];
+  const col = new THREE.Color(cfg.color);
+  const g = new THREE.Group();
+
+  const hull = new THREE.Mesh(
+    new THREE.ConeGeometry(0.34, cfg.len, 10),
+    new THREE.MeshStandardMaterial({ color: 0xe8eaff, emissive: col, emissiveIntensity: 0.25, roughness: 0.35, metalness: 0.5 })
+  );
+  hull.rotation.x = Math.PI / 2; // tip points forward (+z)
+
+  const trimMat = new THREE.MeshStandardMaterial({ color: col, emissive: col, emissiveIntensity: 0.5, roughness: 0.4 });
+  const wings = new THREE.Mesh(new THREE.BoxGeometry(cfg.wing, 0.07, 0.65), trimMat);
+  wings.position.z = -cfg.len * 0.25;
+  const fin = new THREE.Mesh(new THREE.BoxGeometry(0.07, 0.4, 0.5), trimMat);
+  fin.position.set(0, 0.22, -cfg.len * 0.3);
+
+  const cockpit = new THREE.Mesh(new THREE.SphereGeometry(0.17, 12, 10), new THREE.MeshBasicMaterial({ color: 0x9ff3ff }));
+  cockpit.position.set(0, 0.2, cfg.len * 0.05);
+
+  const flame = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: FLAME_TEX, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false
+  }));
+  flame.position.z = -cfg.len / 2 - 0.1;
+  flame.scale.set(1.3, 1.3, 1);
+
+  g.add(hull, wings, fin, cockpit, flame);
+  g.userData.flame = flame;
+  g.scale.setScalar(1.1);
+  return g;
+}
+
+function setShip(type) {
+  shipType = type;
+  const old = ship;
+  ship = buildShip(type);
+  if (old) {
+    ship.position.copy(old.position);
+    ship.quaternion.copy(old.quaternion);
+    scene.remove(old);
+  }
+  scene.add(ship);
+}
+setShip(shipType);
+
+function patrolPos(a) {
+  return new THREE.Vector3(Math.cos(a) * 15, 3 + Math.sin(a * 2) * 1.5, Math.sin(a) * 15);
+}
+let patrolA = 0.5;
+ship.position.copy(patrolPos(patrolA));
+ship.lookAt(patrolPos(patrolA + 0.1));
+
+// Ship picker buttons
+const pickBox = document.getElementById("ship-picks");
+function renderShipPicks() {
+  pickBox.innerHTML = "";
+  Object.keys(SHIPS).forEach(key => {
+    const b = document.createElement("button");
+    b.innerHTML = '<span class="dot" style="background:#' + SHIPS[key].color.toString(16).padStart(6, "0") + '"></span>' + SHIPS[key].name;
+    if (key === shipType) b.classList.add("active");
+    b.addEventListener("click", () => {
+      setShip(key);
+      try { localStorage.setItem("cu-ship", key); } catch (e) { /* ignore */ }
+      renderShipPicks();
+    });
+    pickBox.appendChild(b);
+  });
+}
+renderShipPicks();
+
+/* ---------- Launch: ship flies to the planet, then we travel ---------- */
+let launch = null;
+const tmpDir = new THREE.Vector3();
+
+function launchTo(url, worldId, name) {
+  if (launch) return;
+  const p = planets.find(pl => pl.data.id === worldId);
+  if (reducedMotion || !p) { location.href = url; return; }
+
+  camera.getWorldDirection(tmpDir);
+  const from = camera.position.clone().add(tmpDir.clone().multiplyScalar(3.5)).add(new THREE.Vector3(0, -0.8, 0));
+  const center = p.group.position.clone();
+  const dir = center.clone().sub(from).normalize();
+  const to = center.clone().sub(dir.clone().multiplyScalar(p.data.size * 1.8));
+
+  ship.position.copy(from);
+  ship.lookAt(to);
+  launch = { t: 0, from, to, dir };
+  flyT = 1;
+  controls.enabled = false;
+  controls.autoRotate = false;
+
+  document.getElementById("warp-text").textContent = "🚀 Launching to " + name + "…";
+  setTimeout(() => document.body.classList.add("warping"), 450);
+  setTimeout(() => { location.href = url; }, 1300);
+}
+
+document.getElementById("enter-btn").addEventListener("click", e => {
+  e.preventDefault();
+  const a = e.currentTarget;
+  const wid = new URL(a.href).searchParams.get("world");
+  launchTo(a.href, wid, document.getElementById("panel-name").textContent);
+});
+
 /* ---------- Camera fly-to animation ---------- */
 let flyFrom = null, flyTo = null, targetFrom = null, targetTo = null, flyT = 1;
 
@@ -387,6 +495,7 @@ function flyTo_(pos, target) {
 }
 
 function selectWorld(id) {
+  if (launch) return;
   const p = planets.find(pl => pl.data.id === id);
   if (!p) return;
   const center = p.group.position.clone();
@@ -400,6 +509,7 @@ function selectWorld(id) {
 }
 
 function backToGalaxy() {
+  if (launch) return;
   flyTo_(HOME_POS.clone(), HOME_TARGET.clone());
   hidePanel();
   controls.autoRotate = !reducedMotion;
@@ -457,13 +567,14 @@ let hovered = null;
 canvas.addEventListener("pointerdown", e => { downX = e.clientX; downY = e.clientY; });
 
 canvas.addEventListener("pointerup", e => {
+  if (launch) return;
   if (Math.hypot(e.clientX - downX, e.clientY - downY) > 6) return;
   const hit = pick(e);
   if (hit) selectWorld(hit.object.userData.worldId);
 });
 
 canvas.addEventListener("pointermove", e => {
-  if (e.pointerType === "touch") return;
+  if (e.pointerType === "touch" || launch) return;
   const hit = pick(e);
   hovered = hit ? hit.object.userData.worldId : null;
   canvas.style.cursor = hovered ? "pointer" : "grab";
@@ -478,10 +589,12 @@ function pick(e) {
 
 /* ---------- Animation loop ---------- */
 const clock = new THREE.Clock();
+const desiredCam = new THREE.Vector3();
+const desiredTarget = new THREE.Vector3();
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = clock.getDelta();
+  const dt = Math.min(clock.getDelta(), 0.1);
   const t = clock.elapsedTime;
 
   if (flyT < 1) {
@@ -511,10 +624,34 @@ function animate() {
     }
   }
 
+  // Ship: patrol the galaxy, or rocket to the chosen planet
+  const flame = ship.userData.flame;
+  if (launch) {
+    launch.t = Math.min(launch.t + dt / 1.3, 1);
+    const k = launch.t * launch.t;
+    ship.position.lerpVectors(launch.from, launch.to, k);
+    ship.lookAt(launch.to);
+    ship.scale.setScalar(1.1 * Math.min(1, launch.t * 6));
+
+    desiredCam.copy(ship.position).addScaledVector(launch.dir, -5).add(new THREE.Vector3(0, 1.8, 0));
+    desiredTarget.copy(ship.position).addScaledVector(launch.dir, 4);
+    const f = 1 - Math.exp(-dt * 4);
+    camera.position.lerp(desiredCam, f);
+    controls.target.lerp(desiredTarget, f);
+    flame.scale.setScalar(2.2 + Math.sin(t * 40) * 0.25);
+  } else {
+    if (!reducedMotion) {
+      patrolA += dt * 0.22;
+      ship.position.copy(patrolPos(patrolA));
+      ship.lookAt(patrolPos(patrolA + 0.1));
+    }
+    flame.scale.setScalar(1.3 + Math.sin(t * 20) * 0.12);
+  }
+
   planets.forEach((p, i) => {
     if (!reducedMotion) {
       if (p.body) p.body.rotation.y += dt * 0.25;
-      else p.group.rotation.y = Math.sin(t * 0.2) * 0.25; // island gently sways
+      else p.group.rotation.y = Math.sin(t * 0.2) * 0.25;
       p.group.position.y = p.data.position[1] + Math.sin(t * 0.6 + i) * 0.25;
     }
     p.targetScale = hovered === p.data.id ? 1.05 : 1;
