@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Join · THE CREATOR'S UNIVERSE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>JOIN THE UNIVERSE</h1>
+    <p class="sub">Create your Creator Passport</p>
+
+    <form id="reg-form" novalidate>
+      <label for="displayName">Display name</label>
+      <input id="displayName" type="text" maxlength="40" required autocomplete="name" />
+
+      <label for="username">Username (letters, numbers, _ · 3 to 20)</label>
+      <input id="username" type="text" maxlength="20" required autocomplete="username" />
+
+      <label for="email">Email (kept private)</label>
+      <input id="email" type="email" required autocomplete="email" />
+
+      <label for="password">Password (min 6 characters)</label>
+      <input id="password" type="password" minlength="6" required autocomplete="new-password" />
+
+      <button class="btn" id="submit" type="submit">Create my passport</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+
+    <div class="links">
+      <a href="login.html">I already have an account</a>
+      <a href="index.html">← Galaxy</a>
+    </div>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-config.js";
+    import {
+      createUserWithEmailAndPassword, sendEmailVerification, deleteUser
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      doc, getDoc, writeBatch, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const form = document.getElementById("reg-form");
+    const msg = document.getElementById("msg");
+    const btn = document.getElementById("submit");
+
+    function say(text, ok) {
+      msg.textContent = text;
+      msg.className = "msg " + (ok ? "ok" : "error");
+    }
+
+    function friendly(err) {
+      const map = {
+        "auth/email-already-in-use": "That email already has an account. Try signing in.",
+        "auth/invalid-email": "That email address doesn't look right.",
+        "auth/weak-password": "Password must be at least 6 characters.",
+        "auth/network-request-failed": "Network problem. Check your internet and try again.",
+        "auth/operation-not-allowed": "Email/Password sign-in is not enabled in Firebase yet."
+      };
+      return map[err.code] || "Something went wrong (" + (err.code || err.message) + ").";
+    }
+
+    let savedColor = "#8b5cf6";
+    try { savedColor = localStorage.getItem("cu-avatar-color") || savedColor; } catch (e) { /* ignore */ }
+
+    form.addEventListener("submit", async e => {
+      e.preventDefault();
+      const displayName = document.getElementById("displayName").value.trim();
+      const username = document.getElementById("username").value.trim().toLowerCase();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      if (!displayName) return say("Please enter a display name.");
+      if (!/^[a-z0-9_]{3,20}$/.test(username)) return say("Username: 3 to 20 letters, numbers or _ only.");
+      if (password.length < 6) return say("Password must be at least 6 characters.");
+
+      btn.disabled = true;
+      say("Creating your passport…", true);
+
+      try {
+        const taken = await getDoc(doc(db, "usernames", username));
+        if (taken.exists()) {
+          btn.disabled = false;
+          return say("That username is taken. Try another.");
+        }
+
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        const user = cred.user;
+
+        try {
+          const batch = writeBatch(db);
+          batch.set(doc(db, "users", user.uid), {
+            uid: user.uid,
+            username,
+            displayName,
+            bio: "",
+            skills: [],
+            interests: [],
+            avatarConfig: { color: savedColor },
+            role: "member",
+            accountStatus: "active",
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+          batch.set(doc(db, "usernames", username), { uid: user.uid });
+          await batch.commit();
+        } catch (dbErr) {
+          // Roll back so the person can try again with a different username
+          await deleteUser(user).catch(() => {});
+          throw dbErr;
+        }
+
+        try { await sendEmailVerification(user); } catch (e2) { /* can resend from passport page */ }
+        location.href = "passport.html";
+      } catch (err) {
+        console.error(err);
+        say(friendly(err));
+        btn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
