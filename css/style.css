@@ -230,3 +230,50 @@ html, body {
 body.warping #warp { opacity: 1; transition: opacity 0.3s; }
 body.warping #warp::before { animation: warp-zoom 1.1s ease-in forwards; }
 @keyframes warp-zoom { to { transform: scale(2.6) rotate(10deg); } }
+/* Spaceship picker */
+#ship-bar {
+  position: fixed;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 14, 45, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  padding: 8px 14px;
+  z-index: 12;
+}
+#ship-bar span { font-size: 0.8rem; opacity: 0.8; }
+#ship-picks { display: flex; gap: 6px; }
+#ship-picks button {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 999px;
+  padding: 5px 12px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+#ship-picks button.active {
+  border-color: var(--cyan);
+  background: rgba(34, 211, 238, 0.2);
+}
+@media (max-width: 720px) {
+  #ship-bar {
+    top: 64px;
+    bottom: auto;
+    right: 12px;
+    left: auto;
+    transform: none;
+    flex-direction: column;
+    align-items: flex-end;
+    border-radius: 18px;
+  }
+  #ship-picks { flex-direction: column; }
+}
