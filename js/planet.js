@@ -6,7 +6,7 @@ const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matc
 const isMobile = innerWidth < 720;
 const canvas = document.getElementById("galaxy-canvas");
 
-/* ---------- Which planet? (from the address: planet.html?world=artoria) ---------- */
+/* ---------- Which planet? (planet.html?world=artoria) ---------- */
 const id = new URLSearchParams(location.search).get("world");
 const world = WORLDS.find(w => w.id === id) || WORLDS[0];
 const wColor = new THREE.Color(world.color);
@@ -148,7 +148,11 @@ function mulberry32(a) {
 }
 
 /* ---------- Cloud sea below ---------- */
-const cloudTex = [glowTexture("rgba(244,114,182,0.55)"), glowTexture("rgba(139,92,246,0.5)"), glowTexture("rgba(251,146,60,0.35)")];
+const cloudTex = [
+  glowTexture("rgba(244,114,182,0.55)"),
+  glowTexture("rgba(139,92,246,0.5)"),
+  glowTexture("rgba(251,146,60,0.35)")
+];
 for (let i = 0; i < (isMobile ? 10 : 18); i++) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({
     map: cloudTex[i % 3], transparent: true, opacity: 0.55, depthWrite: false
@@ -284,6 +288,220 @@ exhibits.forEach((ex, i) => {
   pavilions.push({ group: g, pos: new THREE.Vector3(px, 0, pz), scale: 1, target: 1 });
 });
 
+/* ---------- Avatar ---------- */
+const SWATCHES = ["#8b5cf6", "#f472b6", "#22d3ee", "#fbbf24", "#34d399", "#fb923c"];
+let avatarColor = SWATCHES[0];
+try {
+  const saved = localStorage.getItem("cu-avatar-color");
+  if (saved && SWATCHES.includes(saved)) avatarColor = saved;
+} catch (e) { /* storage may be blocked, that's fine */ }
+
+const avatarMat = new THREE.MeshStandardMaterial({
+  color: avatarColor, emissive: avatarColor, emissiveIntensity: 0.18, roughness: 0.5
+});
+
+function buildAvatar() {
+  const g = new THREE.Group();
+
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.28, 0.5, 4, 12), avatarMat);
+  body.position.y = 0.75;
+
+  const head = new THREE.Mesh(
+    new THREE.SphereGeometry(0.26, 20, 16),
+    new THREE.MeshStandardMaterial({ color: 0xffe0c8, roughness: 0.7 })
+  );
+  head.position.y = 1.38;
+
+  const visor = new THREE.Mesh(
+    new THREE.BoxGeometry(0.36, 0.1, 0.12),
+    new THREE.MeshBasicMaterial({ color: 0x22d3ee })
+  );
+  visor.position.set(0, 1.4, 0.2);
+
+  const pack = new THREE.Mesh(
+    new THREE.BoxGeometry(0.3, 0.4, 0.15),
+    new THREE.MeshStandardMaterial({ color: 0x2a2250, roughness: 0.6 })
+  );
+  pack.position.set(0, 0.8, -0.3);
+
+  const legMat = new THREE.MeshStandardMaterial({ color: 0x2a2250, roughness: 0.7 });
+  const legL = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.4, 0.14), legMat);
+  const legR = legL.clone();
+  legL.position.set(-0.13, 0.2, 0);
+  legR.position.set(0.13, 0.2, 0);
+
+  g.add(body, head, visor, pack, legL, legR);
+  g.userData.legL = legL;
+  g.userData.legR = legR;
+  g.userData.body = body;
+  return g;
+}
+
+const avatar = buildAvatar();
+avatar.visible = false;
+scene.add(avatar);
+
+/* ---------- Walk mode ---------- */
+let walking = false;
+let nearIndex = -1;
+const input = { up: false, down: false, left: false, right: false };
+const AVATAR_Y = 0.25;
+const SPEED = 4;
+const prompt_ = document.getElementById("walk-prompt");
+const walkBtn = document.getElementById("walk-btn");
+
+function setWalking(on) {
+  walking = on;
+  avatar.visible = on;
+  document.body.classList.toggle("walking", on);
+  walkBtn.textContent = on ? "🧭 Explore mode" : "🚶 Walk mode";
+  flyT = 1;
+  if (on) {
+    controls.autoRotate = false;
+    controls.minDistance = 3;
+    controls.maxDistance = 16;
+    avatar.position.set(0, AVATAR_Y, 3.2);
+    avatar.rotation.y = Math.PI;
+    camera.position.set(0, 4.4, 10);
+    controls.target.set(0, 1.2, 3.2);
+  } else {
+    controls.minDistance = 6;
+    controls.maxDistance = 45;
+    nearIndex = -1;
+    prompt_.classList.add("hidden-prompt");
+    fly(HOME_POS.clone(), HOME_TARGET.clone());
+    controls.autoRotate = !reducedMotion;
+  }
+}
+
+walkBtn.addEventListener("click", () => setWalking(!walking));
+
+// Colour swatches
+const swatchBox = document.getElementById("swatches");
+SWATCHES.forEach(c => {
+  const b = document.createElement("button");
+  b.style.background = c;
+  b.setAttribute("aria-label", "Avatar colour " + c);
+  if (c === avatarColor) b.classList.add("active");
+  b.addEventListener("click", () => {
+    avatarColor = c;
+    avatarMat.color.set(c);
+    avatarMat.emissive.set(c);
+    swatchBox.querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+    try { localStorage.setItem("cu-avatar-color", c); } catch (e) { /* ignore */ }
+  });
+  swatchBox.appendChild(b);
+});
+
+// Keyboard
+const KEYMAP = {
+  KeyW: "up", ArrowUp: "up",
+  KeyS: "down", ArrowDown: "down",
+  KeyA: "left", ArrowLeft: "left",
+  KeyD: "right", ArrowRight: "right"
+};
+addEventListener("keydown", e => {
+  if (!walking) return;
+  const dir = KEYMAP[e.code];
+  if (dir) { input[dir] = true; e.preventDefault(); }
+  if (e.code === "KeyE" && nearIndex >= 0) openExhibit(nearIndex);
+});
+addEventListener("keyup", e => {
+  const dir = KEYMAP[e.code];
+  if (dir) input[dir] = false;
+});
+addEventListener("blur", () => { input.up = input.down = input.left = input.right = false; });
+
+// On-screen d-pad
+document.querySelectorAll("#dpad button").forEach(b => {
+  const dir = b.dataset.dir;
+  const on = e => { input[dir] = true; e.preventDefault(); };
+  const off = () => { input[dir] = false; };
+  b.addEventListener("pointerdown", on);
+  b.addEventListener("pointerup", off);
+  b.addEventListener("pointerleave", off);
+  b.addEventListener("pointercancel", off);
+});
+
+prompt_.addEventListener("click", () => { if (nearIndex >= 0) openExhibit(nearIndex); });
+
+const fwd = new THREE.Vector3();
+const right = new THREE.Vector3();
+const move = new THREE.Vector3();
+const UP = new THREE.Vector3(0, 1, 0);
+const before = new THREE.Vector3();
+
+function updateWalk(dt, t) {
+  const ix = (input.right ? 1 : 0) - (input.left ? 1 : 0);
+  const iz = (input.up ? 1 : 0) - (input.down ? 1 : 0);
+  let moving = false;
+
+  before.copy(avatar.position);
+
+  if (ix !== 0 || iz !== 0) {
+    camera.getWorldDirection(fwd);
+    fwd.y = 0;
+    fwd.normalize();
+    right.crossVectors(fwd, UP);
+    move.set(0, 0, 0).addScaledVector(fwd, iz).addScaledVector(right, ix).normalize();
+
+    avatar.position.addScaledVector(move, SPEED * dt);
+    moving = true;
+
+    const target = Math.atan2(move.x, move.z);
+    let diff = target - avatar.rotation.y;
+    diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+    avatar.rotation.y += diff * Math.min(1, dt * 10);
+  }
+
+  // Keep on the island
+  const p = avatar.position;
+  const maxR = R - 0.9;
+  const d = Math.hypot(p.x, p.z);
+  if (d > maxR) { p.x *= maxR / d; p.z *= maxR / d; }
+
+  // Don't walk through the crystal pedestal
+  const dc = Math.hypot(p.x, p.z);
+  if (dc < 1.9 && dc > 0.001) { p.x *= 1.9 / dc; p.z *= 1.9 / dc; }
+
+  // Don't walk through pavilions
+  pavilions.forEach(pv => {
+    const dx = p.x - pv.pos.x, dz = p.z - pv.pos.z;
+    const dd = Math.hypot(dx, dz);
+    if (dd < 1.5 && dd > 0.001) {
+      p.x = pv.pos.x + (dx / dd) * 1.5;
+      p.z = pv.pos.z + (dz / dd) * 1.5;
+    }
+  });
+  p.y = AVATAR_Y;
+
+  // Walking animation
+  const swing = moving ? Math.sin(t * 11) * 0.6 : 0;
+  avatar.userData.legL.rotation.x = swing;
+  avatar.userData.legR.rotation.x = -swing;
+  avatar.userData.body.position.y = 0.75 + (moving ? Math.abs(Math.sin(t * 11)) * 0.05 : 0);
+
+  // Camera follows the avatar (you can still drag to orbit around it)
+  camera.position.add(p.clone().sub(before));
+  controls.target.set(p.x, p.y + 1.2, p.z);
+
+  // Near a pavilion?
+  let best = -1, bestD = 2.9;
+  pavilions.forEach((pv, i) => {
+    const dd = Math.hypot(p.x - pv.pos.x, p.z - pv.pos.z);
+    if (dd < bestD) { bestD = dd; best = i; }
+  });
+  if (best !== nearIndex) {
+    nearIndex = best;
+    if (best >= 0) {
+      prompt_.textContent = "Open exhibit: " + exhibits[best].category + "  (E)";
+      prompt_.classList.remove("hidden-prompt");
+    } else {
+      prompt_.classList.add("hidden-prompt");
+    }
+  }
+}
+
 /* ---------- Camera fly ---------- */
 let flyFrom, flyTo, targetFrom, targetTo, flyT = 1;
 function fly(pos, target) {
@@ -325,14 +543,20 @@ function openExhibit(i) {
   panel.classList.remove("hidden");
   list.querySelectorAll("button").forEach(b => b.classList.toggle("active", Number(b.dataset.index) === i));
 
+  if (walking) return; // in walk mode the camera stays with the avatar
+
   const p = pavilions[i].pos;
   const dir = p.clone().setY(0).normalize();
-  fly(p.clone().add(dir.multiplyScalar(7)).add(new THREE.Vector3(0, 3.5, 0)), p.clone().add(new THREE.Vector3(0, 1.2, 0)));
+  fly(
+    p.clone().add(dir.multiplyScalar(7)).add(new THREE.Vector3(0, 3.5, 0)),
+    p.clone().add(new THREE.Vector3(0, 1.2, 0))
+  );
 }
 
 function closeExhibit() {
   panel.classList.add("hidden");
   list.querySelectorAll("button").forEach(b => b.classList.remove("active"));
+  if (walking) return;
   fly(HOME_POS.clone(), HOME_TARGET.clone());
   controls.autoRotate = !reducedMotion;
 }
@@ -371,7 +595,7 @@ const clock = new THREE.Clock();
 
 function animate() {
   requestAnimationFrame(animate);
-  const dt = clock.getDelta();
+  const dt = Math.min(clock.getDelta(), 0.1);
   const t = clock.elapsedTime;
 
   if (flyT < 1) {
@@ -386,6 +610,8 @@ function animate() {
     crystal.position.y = 2.5 + Math.sin(t * 1.2) * 0.2;
     if (sky) sky.rotation.y += dt * 0.004;
   }
+
+  if (walking) updateWalk(dt, t);
 
   pavilions.forEach((p, i) => {
     p.target = hovered === i ? 1.08 : 1;
