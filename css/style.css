@@ -186,3 +186,15 @@ html, body {
     max-height: 48vh;
   }
 }
+#enter-btn {
+  display: block;
+  margin-top: 18px;
+  padding: 10px;
+  text-align: center;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 12px;
+  background: linear-gradient(90deg, var(--pink), var(--gold));
+}
+#enter-btn + #back-btn { margin-top: 10px; }
