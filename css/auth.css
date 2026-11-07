@@ -1,0 +1,96 @@
+html, body {
+  height: auto;
+  min-height: 100%;
+  overflow-y: auto;
+}
+
+body.auth-page {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.auth-card {
+  width: min(460px, 100%);
+  background: rgba(10, 14, 45, 0.82);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 20px;
+  padding: 28px;
+}
+
+.auth-card h1 {
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+  background: linear-gradient(90deg, var(--cyan), var(--violet), var(--pink));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.sub { opacity: 0.75; margin: 4px 0 14px; font-size: 0.9rem; }
+
+.auth-card label {
+  display: block;
+  font-size: 0.78rem;
+  letter-spacing: 1px;
+  opacity: 0.8;
+  margin: 12px 0 4px;
+}
+
+.auth-card input,
+.auth-card textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(139, 92, 246, 0.5);
+  background: rgba(7, 10, 31, 0.7);
+  color: var(--text);
+  font: inherit;
+}
+.auth-card input:focus,
+.auth-card textarea:focus { outline: 2px solid var(--cyan); }
+
+.btn {
+  display: block;
+  width: 100%;
+  margin-top: 18px;
+  padding: 11px;
+  border: none;
+  border-radius: 12px;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+}
+.btn.secondary { background: transparent; border: 1px solid var(--violet); margin-top: 10px; }
+.btn:disabled { opacity: 0.6; cursor: wait; }
+
+.msg { margin-top: 12px; font-size: 0.85rem; min-height: 1.2em; }
+.msg.error { color: #fca5a5; }
+.msg.ok { color: #86efac; }
+
+.links { margin-top: 16px; display: flex; justify-content: space-between; font-size: 0.85rem; }
+.links a, .linkbtn {
+  color: var(--cyan);
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  font: inherit;
+}
+
+.status { font-size: 0.85rem; margin: 6px 0 2px; }
+
+.swatches { display: flex; gap: 8px; margin-top: 4px; }
+.swatches button {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+.swatches button.active { border-color: #fff; transform: scale(1.2); }
