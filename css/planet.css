@@ -120,3 +120,102 @@ body.walking #dpad { display: grid; }
   /* d-pad is mainly for touch screens */
   body.walking #dpad { opacity: 0.5; }
 }
+/* Avatar bar */
+#avatar-bar {
+  position: fixed;
+  bottom: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(10, 14, 45, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  border-radius: 999px;
+  padding: 8px 14px;
+  z-index: 12;
+}
+#walk-btn {
+  background: linear-gradient(90deg, var(--violet), var(--cyan));
+  color: #fff;
+  border: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+#swatches { display: flex; gap: 6px; }
+#swatches button {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  cursor: pointer;
+}
+#swatches button.active { border-color: #fff; transform: scale(1.2); }
+
+/* Open exhibit prompt */
+#walk-prompt {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  background: rgba(251, 191, 36, 0.92);
+  color: #1a1030;
+  font-weight: 700;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 18px;
+  cursor: pointer;
+  box-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+}
+#walk-prompt.hidden-prompt { display: none; }
+
+/* On-screen d-pad (only while walking) */
+#dpad {
+  display: none;
+  position: fixed;
+  left: 18px;
+  bottom: 60px;
+  z-index: 12;
+  grid-template-columns: repeat(3, 52px);
+  grid-template-rows: repeat(2, 52px);
+  gap: 6px;
+}
+body.walking #dpad { display: grid; }
+#dpad button {
+  background: rgba(10, 14, 45, 0.75);
+  color: var(--text);
+  border: 1px solid var(--violet);
+  border-radius: 14px;
+  font-size: 1.1rem;
+  touch-action: none;
+  user-select: none;
+}
+#dpad button:active { background: rgba(139, 92, 246, 0.6); }
+#dpad [data-dir="up"] { grid-column: 2; grid-row: 1; }
+#dpad [data-dir="left"] { grid-column: 1; grid-row: 2; }
+#dpad [data-dir="down"] { grid-column: 2; grid-row: 2; }
+#dpad [data-dir="right"] { grid-column: 3; grid-row: 2; }
+
+@media (max-width: 720px) {
+  #avatar-bar {
+    top: 64px;
+    bottom: auto;
+    right: 12px;
+    left: auto;
+    transform: none;
+    flex-direction: column;
+    align-items: flex-end;
+    border-radius: 18px;
+  }
+  #swatches { flex-wrap: wrap; justify-content: flex-end; max-width: 120px; }
+  #walk-prompt { bottom: 140px; }
+}
+@media (min-width: 721px) {
+  /* d-pad is mainly for touch screens */
+  body.walking #dpad { opacity: 0.5; }
+}
