@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>THE CREATOR'S UNIVERSE</title>
+  <link rel="stylesheet" href="css/style.css" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <p>Entering the universe…</p>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <h1>THE CREATOR'S UNIVERSE</h1>
+      <p>One universe. Different talents. Unlimited possibilities.</p>
+    </div>
+    <button id="menu-btn" aria-label="Toggle planet list">☰ Planets</button>
+  </header>
+
+  <canvas id="galaxy-canvas" aria-label="Interactive galaxy with creative planets"></canvas>
+
+  <!-- Accessible 2D navigation (works even without 3D) -->
+  <nav id="world-nav" aria-label="Planets">
+    <h2>Planets</h2>
+    <ul id="world-list"></ul>
+  </nav>
+
+  <!-- Planet info panel -->
+  <aside id="info-panel" class="hidden" aria-live="polite">
+    <button id="close-panel" aria-label="Close">✕</button>
+    <h2 id="panel-name"></h2>
+    <p id="panel-tagline" class="tagline"></p>
+    <p id="panel-desc"></p>
+    <h3>What lives here</h3>
+    <ul id="panel-cats"></ul>
+    <button id="back-btn">↩ Back to galaxy</button>
+  </aside>
+
+  <p class="hint">Drag to look around · Scroll or pinch to zoom · Tap a planet</p>
+
+  <noscript>Please enable JavaScript to explore the universe.</noscript>
+
+  <script type="module" src="js/galaxy.js"></script>
+</body>
+</html>
