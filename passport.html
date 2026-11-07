@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My Creator Passport · THE CREATOR'S UNIVERSE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+</head>
+<body class="auth-page">
+  <main class="auth-card">
+    <h1>MY CREATOR PASSPORT</h1>
+    <p class="sub" id="who">Loading…</p>
+    <p class="status" id="verify"></p>
+    <button class="linkbtn" id="resend" type="button" hidden>Resend verification email</button>
+
+    <form id="pp-form" novalidate hidden>
+      <label for="displayName">Display name</label>
+      <input id="displayName" type="text" maxlength="40" required />
+
+      <label for="bio">Bio (max 300 characters)</label>
+      <textarea id="bio" rows="3" maxlength="300"></textarea>
+
+      <label for="skills">Skills (comma separated, up to 12)</label>
+      <input id="skills" type="text" placeholder="MATLAB, drawing, Japanese" />
+
+      <label for="interests">Creative interests (comma separated, up to 12)</label>
+      <input id="interests" type="text" placeholder="classical dance, painting" />
+
+      <label>Avatar colour</label>
+      <div class="swatches" id="swatches"></div>
+
+      <button class="btn" id="save" type="submit">Save passport</button>
+      <p class="msg" id="msg" role="alert"></p>
+    </form>
+
+    <a class="btn secondary" href="index.html">← Back to the galaxy</a>
+    <button class="btn secondary" id="logout" type="button">Log out</button>
+  </main>
+
+  <script type="module">
+    import { auth, db } from "./js/firebase-config.js";
+    import {
+      onAuthStateChanged, signOut, sendEmailVerification
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+    import {
+      doc, getDoc, updateDoc, serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+    const SWATCHES = ["#8b5cf6", "#f472b6", "#22d3ee", "#fbbf24", "#34d399", "#fb923c"];
+    const $ = id => document.getElementById(id);
+    let color = SWATCHES[0];
+    let ref = null;
+
+    function say(text, ok) {
+      $("msg").textContent = text;
+      $("msg").className = "msg " + (ok ? "ok" : "error");
+    }
+
+    function toList(text) {
+      return text.split(",").map(s => s.trim().slice(0, 30)).filter(Boolean).slice(0, 12);
+    }
+
+    function drawSwatches() {
+      $("swatches").innerHTML = "";
+      SWATCHES.forEach(c => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.style.background = c;
+        b.setAttribute("aria-label", "Avatar colour " + c);
+        if (c === color) b.classList.add("active");
+        b.addEventListener("click", () => { color = c; drawSwatches(); });
+        $("swatches").appendChild(b);
+      });
+    }
+
+    onAuthStateChanged(auth, async user => {
+      if (!user) { location.href = "login.html"; return; }
+
+      await user.reload().catch(() => {});
+      $("verify").textContent = user.emailVerified ? "✅ Email verified" : "⚠️ Email not verified yet. Check your inbox.";
+      $("resend").hidden = user.emailVerified;
+
+      ref = doc(db, "users", user.uid);
+      const snap = await getDoc(ref);
+      if (!snap.exists()) {
+        $("who").textContent = "No passport found for this account.";
+        return;
+      }
+      const d = snap.data();
+      $("who").textContent = "@" + d.username;
+      $("displayName").value = d.displayName || "";
+      $("bio").value = d.bio || "";
+      $("skills").value = (d.skills || []).join(", ");
+      $("interests").value = (d.interests || []).join(", ");
+      color = (d.avatarConfig && d.avatarConfig.color) || color;
+      try { localStorage.setItem("cu-avatar-color", color); } catch (e) { /* ignore */ }
+      drawSwatches();
+      $("pp-form").hidden = false;
+    });
+
+    $("pp-form").addEventListener("submit", async e => {
+      e.preventDefault();
+      const displayName = $("displayName").value.trim();
+      if (!displayName) return say("Display name can't be empty.");
+      $("save").disabled = true;
+      try {
+        await updateDoc(ref, {
+          displayName,
+          bio: $("bio").value.trim().slice(0, 300),
+          skills: toList($("skills").value),
+          interests: toList($("interests").value),
+          avatarConfig: { color },
+          updatedAt: serverTimestamp()
+        });
+        try { localStorage.setItem("cu-avatar-color", color); } catch (e2) { /* ignore */ }
+        say("Saved ✔", true);
+      } catch (err) {
+        console.error(err);
+        say("Could not save (" + (err.code || err.message) + ").");
+      }
+      $("save").disabled = false;
+    });
+
+    $("resend").addEventListener("click", async () => {
+      try {
+        await sendEmailVerification(auth.currentUser);
+        $("verify").textContent = "📧 Verification email sent. Check your inbox and spam.";
+      } catch (err) {
+        $("verify").textContent = "Could not send right now. Try again in a few minutes.";
+      }
+    });
+
+    $("logout").addEventListener("click", async () => {
+      await signOut(auth);
+      location.href = "index.html";
+    });
+  </script>
+</body>
+</html>
