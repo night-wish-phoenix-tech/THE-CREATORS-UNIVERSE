@@ -4,12 +4,13 @@ export const WORLDS = [
     id: "nexus",
     name: "NEXUS",
     tagline: "Central Hub",
-    description: "The welcome planet and spaceport. Meet featured creators and find your way to every other world.",
+    description: "The welcome island and spaceport. Meet featured creators and find your way to every other world.",
     categories: ["Spaceport", "Featured creators", "Featured projects", "Announcements"],
     color: "#fbbf24",
-    size: 2.6,
+    size: 3,
     position: [0, 0, 0],
-    ring: true
+    ring: false,
+    type: "island"
   },
   {
     id: "artoria",
