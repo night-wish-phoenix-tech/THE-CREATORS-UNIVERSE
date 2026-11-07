@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Planet · THE CREATOR'S UNIVERSE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/planet.css" />
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-ring"></div>
+    <p>Landing on the planet…</p>
+  </div>
+
+  <header class="topbar">
+    <div class="brand">
+      <h1 id="world-title">PLANET</h1>
+      <p id="world-sub"></p>
+    </div>
+    <div class="top-actions">
+      <a class="back-link" href="index.html">← Galaxy</a>
+      <button id="menu-btn" aria-label="Toggle exhibit list">☰ Exhibits</button>
+    </div>
+  </header>
+
+  <canvas id="galaxy-canvas" aria-label="Interactive planet island with exhibition pavilions"></canvas>
+
+  <!-- Accessible 2D list of exhibits -->
+  <nav id="world-nav" aria-label="Exhibits">
+    <h2>Exhibits</h2>
+    <ul id="world-list"></ul>
+    <p class="demo-note">Demo data for now. Real creator projects arrive in Phase 7.</p>
+  </nav>
+
+  <aside id="info-panel" class="hidden" aria-live="polite">
+    <button id="close-panel" aria-label="Close">✕</button>
+    <h2 id="panel-name"></h2>
+    <p id="panel-tagline" class="tagline"></p>
+    <p id="panel-desc"></p>
+    <h3>Tags</h3>
+    <ul id="panel-cats"></ul>
+    <button id="back-btn">Close exhibit</button>
+  </aside>
+
+  <p class="hint">Drag to look around · Scroll or pinch to zoom · Tap a glowing pavilion</p>
+
+  <noscript>Please enable JavaScript to explore the universe.</noscript>
+
+  <script type="module" src="js/planet.js"></script>
+</body>
+</html>
