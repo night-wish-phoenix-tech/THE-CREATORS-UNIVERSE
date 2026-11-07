@@ -15,22 +15,6 @@
   }
   </script>
 </head>
-  <div id="warp"><p id="warp-text"></p></div>
-
-  <script>
-    document.getElementById("enter-btn").addEventListener("click", function (e) {
-      e.preventDefault();
-      var url = this.href;
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-        location.href = url;
-        return;
-      }
-      document.getElementById("warp-text").textContent =
-        "🚀 Launching to " + document.getElementById("panel-name").textContent + "…";
-      document.body.classList.add("warping");
-      setTimeout(function () { location.href = url; }, 1100);
-    });
-  </script>
 <body>
   <div id="loader">
     <div class="loader-ring"></div>
@@ -64,6 +48,15 @@
     <a id="enter-btn" href="#">Enter planet →</a>
     <button id="back-btn">↩ Back to galaxy</button>
   </aside>
+
+  <!-- Spaceship picker -->
+  <div id="ship-bar">
+    <span>🚀 Your ship</span>
+    <div id="ship-picks"></div>
+  </div>
+
+  <!-- Warp effect (used when travelling) -->
+  <div id="warp"><p id="warp-text"></p></div>
 
   <p class="hint">Drag to look around · Scroll or pinch to zoom · Tap a planet</p>
 
